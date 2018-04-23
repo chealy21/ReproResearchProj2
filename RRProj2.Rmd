@@ -1,6 +1,9 @@
 ---
 title: "RRProj2"
-output: html_document
+output: 
+  html_document:
+    keep_md: yes
+
 ---
 # Preparation and Pre-processing of Data
 Data on weather events was downloaded from https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2. Weather events were classified based on the documentation provided here: https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf
