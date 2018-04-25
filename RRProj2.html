@@ -124,15 +124,15 @@ $(document).ready(function () {
 
 <div id="preparation-and-pre-processing-of-data" class="section level1">
 <h1>Preparation and Pre-processing of Data</h1>
-<p>Data on weather events was downloaded from <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2">https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2</a>. Weather events were classified based on the documentation provided here: <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf</a> ## Loading necessary libraries</p>
+<p>Data on weather events was downloaded from <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2">https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2</a>. Weather events were classified based on the documentation provided here: <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf</a> ### Loading necessary libraries</p>
 <pre class="r"><code>knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='figures/',
                       echo=TRUE, warning=FALSE, message=FALSE)
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(fuzzyjoin))</code></pre>
 <pre><code>## Warning: package 'fuzzyjoin' was built under R version 3.4.4</code></pre>
 <pre class="r"><code>suppressPackageStartupMessages(library(ggplot2))</code></pre>
-<div id="download-and-load-file" class="section level2">
-<h2>Download and load file</h2>
+<div id="download-and-load-file" class="section level3">
+<h3>Download and load file</h3>
 <pre class="r"><code>destfile&lt;-&quot;stormdata.csv.bz2&quot;
 fileURL&lt;-&quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2&quot;
 if(!file.exists(destfile)){
@@ -145,9 +145,9 @@ eventcat&lt;-c(&quot;Astronomical Low Tide&quot;,&quot;Avalanche&quot;,&quot;Bli
 eventcat&lt;-as_tibble(eventcat)
 names(eventcat)&lt;-&quot;EVTYPE&quot;</code></pre>
 </div>
-<div id="subset" class="section level2">
-<h2>Subset</h2>
-<p>Subset EVTYPE, FATALITIES, and INJURIES to help determine overall mortality of weather events.</p>
+<div id="subset" class="section level3">
+<h3>Subset</h3>
+<p>Subset EVTYPE, FATALITIES, and INJURIES to help determine overall mortality of weather events. Summarize by EVCAT and EVTYPE, sum fatalities and injuries into mortality.</p>
 <pre class="r"><code>eventtype&lt;-stormdata %&gt;% select(EVTYPE,FATALITIES,INJURIES) %&gt;% transform(EVTYPE=tolower(EVTYPE)) %&gt;% arrange(EVTYPE)
 eventtype.table&lt;-as_tibble(eventtype)
 eventtype&lt;-eventtype.table %&gt;% stringdist_left_join(eventcat,method=&quot;lcs&quot;,ignore_case=TRUE,max_dist=1)
@@ -163,23 +163,14 @@ eventtype&lt;-eventtype %&gt;% group_by(EVCAT,EVTYPE) %&gt;% summarize(mortality
 #Remove unnecessary data frames
 rm(stormdata, eventtype.table,eventcat)</code></pre>
 </div>
-<div id="clean-the-event-types-to-correspond-to-the-48-listed-types" class="section level2">
-<h2>Clean the event types to correspond to the 48 listed types</h2>
-<p>I collapsed the event types into appropriate groups. To do this, I added an event category column to avoid changing the raw data. I then used regular expression functions to identify the categories, and set the category column for those events to one of the 48 categories listed in the accompanying documentation. Any event that could not be easily classified was defined as ‘other’. To classify each category, the category pattern was selected and viewed. If one occurrence had multiple events, it was classifed by the most likely cause of injury or destruction. For example, excessive heat causes more injuries and fatalities than drought, and therefore excessive heat/drought was classified as excessive heat. Tornadoes are more destructive than thunderstorm wind and hail, so ‘tornadoes, tstm wind, hail’ was classified as tornado. Categories were classified by subsetting the unique eventtypes with the category. The EVCAT was set equal to the appropriate category and n was changed to 1.The subset was then removed.</p>
-<ul>
-<li>Notes:</li>
-<li>Landslide, mudslide, and rock slide combined with avalanche</li>
-<li>Blow-out tide added to astronomical low tide</li>
-<li>Excessive heat/drought classified as excessive heat</li>
-<li>Cold/Wind Chill combined with Extreme Cold/Wind Chill</li>
-<li>Heavy snow/ice storm classified as heavy snow</li>
-<li>The wind categories should be run last to avoid conflicts</li>
-<li>All winter events not included in previous categories were grouped into Winter Weather</li>
-<li>Cold, Dry, High Seas, Wind were added as categories</li>
-</ul>
+<div id="clean-the-event-types-to-correspond-to-the-48-listed-types" class="section level3">
+<h3>Clean the event types to correspond to the 48 listed types</h3>
+<p>Collapse the event types into appropriate groups. To do this, Add an event category column to avoid changing the raw data. Use regular expression functions to identify the categories, and set the category column for those events to one of the 48 categories listed in the accompanying documentation. Any event that could not be easily classified was defined as ‘other’. To classify each category, the category pattern was selected and viewed. If one occurrence had multiple events, it was classifed by the most likely cause of injury or destruction. For example, excessive heat causes more injuries and fatalities than drought, and therefore excessive heat/drought was classified as excessive heat. Tornadoes are more destructive than thunderstorm wind and hail, so ‘tornadoes, tstm wind, hail’ was classified as tornado. Categories were classified by subsetting the unique eventtypes with the category. The EVCAT was set equal to the appropriate category and n was changed to 1.The subset was then removed.</p>
+<p>**<a href="Notes:**" class="uri">Notes:**</a> + Landslide, mudslide, and rock slide combined with avalanche + Blow-out tide added to astronomical low tide + Excessive heat/drought classified as excessive heat + Cold/Wind Chill combined with Extreme Cold/Wind Chill + Heavy snow/ice storm classified as heavy snow + The wind categories should be run last to avoid conflicts + All winter events not included in previous categories were grouped into Winter Weather + Cold, Dry, High Seas, Wind were added as categories</p>
 </div>
-<div id="re-summarize-by-mortality" class="section level2">
-<h2>Re-Summarize by mortality</h2>
+<div id="re-summarize-by-mortality" class="section level3">
+<h3>Re-Summarize by mortality</h3>
+<p>Now that the event types have been categorized, the data are summarized again by the event category and the percent mortality is computed. The 10 events with the highest mortality are sub-setted.</p>
 <pre class="r"><code>eventtype&lt;-eventtype %&gt;% group_by(EVCAT) %&gt;% summarize(mortality=sum(mortality,na.rm=TRUE)) %&gt;% arrange(desc(mortality))
 eventtype&lt;-eventtype %&gt;% mutate(pct_mortality=as.numeric(format(round(mortality/sum(mortality)),2),nsmall=2))
 head(eventtype,10)</code></pre>
@@ -200,6 +191,7 @@ head(eventtype,10)</code></pre>
 </div>
 <div id="plot-mortalitity-rates" class="section level2">
 <h2>Plot mortalitity rates</h2>
+<p>The 10 events with the highest mortality are plotted.</p>
 <pre class="r"><code>g&lt;-ggplot(eventtype.subset, aes(EVCAT,mortality))
 p&lt;-g+geom_col(aes(fill=EVCAT))+labs(title=&quot;Mortality Rate of Weather Events in the United States&quot;)
 print(p)</code></pre>

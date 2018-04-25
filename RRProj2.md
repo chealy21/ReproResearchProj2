@@ -7,7 +7,7 @@ output:
 ---
 # Preparation and Pre-processing of Data
 Data on weather events was downloaded from https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2. Weather events were classified based on the documentation provided here: https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf
-## Loading necessary libraries
+### Loading necessary libraries
 
 ```r
 knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='figures/',
@@ -24,7 +24,7 @@ suppressPackageStartupMessages(library(fuzzyjoin))
 suppressPackageStartupMessages(library(ggplot2))
 ```
 
-## Download and load file
+### Download and load file
 
 ```r
 destfile<-"stormdata.csv.bz2"
@@ -41,8 +41,8 @@ names(eventcat)<-"EVTYPE"
 ```
 
 
-## Subset
-Subset EVTYPE, FATALITIES, and INJURIES to help determine overall mortality of weather events.
+### Subset
+Subset EVTYPE, FATALITIES, and INJURIES to help determine overall mortality of weather events. Summarize by EVCAT and EVTYPE, sum fatalities and injuries into mortality.
 
 ```r
 eventtype<-stormdata %>% select(EVTYPE,FATALITIES,INJURIES) %>% transform(EVTYPE=tolower(EVTYPE)) %>% arrange(EVTYPE)
@@ -61,10 +61,10 @@ eventtype<-eventtype %>% group_by(EVCAT,EVTYPE) %>% summarize(mortality=sum(FATA
 rm(stormdata, eventtype.table,eventcat)
 ```
 
-## Clean the event types to correspond to the 48 listed types
-I collapsed the event types into appropriate groups. To do this, I added an event category column to avoid changing the raw data. I then used regular expression functions to identify the categories, and set the category column for those events to one of the 48 categories listed in the accompanying documentation. Any event that could not be easily classified was defined as 'other'. To classify each category, the category pattern was selected and viewed. If one occurrence had multiple events, it was classifed by the most likely cause of injury or destruction. For example, excessive heat causes more injuries and fatalities than drought, and therefore excessive heat/drought was classified as excessive heat. Tornadoes are more destructive than thunderstorm wind and hail, so 'tornadoes, tstm wind, hail' was classified as tornado. Categories were classified by subsetting the unique eventtypes with the category. The EVCAT was set equal to the appropriate category and n was changed to 1.The subset was then removed. 
+### Clean the event types to correspond to the 48 listed types
+Collapse the event types into appropriate groups. To do this, Add an event category column to avoid changing the raw data. Use regular expression functions to identify the categories, and set the category column for those events to one of the 48 categories listed in the accompanying documentation. Any event that could not be easily classified was defined as 'other'. To classify each category, the category pattern was selected and viewed. If one occurrence had multiple events, it was classifed by the most likely cause of injury or destruction. For example, excessive heat causes more injuries and fatalities than drought, and therefore excessive heat/drought was classified as excessive heat. Tornadoes are more destructive than thunderstorm wind and hail, so 'tornadoes, tstm wind, hail' was classified as tornado. Categories were classified by subsetting the unique eventtypes with the category. The EVCAT was set equal to the appropriate category and n was changed to 1.The subset was then removed. 
 
-* Notes:
+**Notes:**
 + Landslide, mudslide, and rock slide combined with avalanche
 + Blow-out tide added to astronomical low tide
 + Excessive heat/drought classified as excessive heat
@@ -77,7 +77,8 @@ I collapsed the event types into appropriate groups. To do this, I added an even
 
 
 
-## Re-Summarize by mortality 
+### Re-Summarize by mortality 
+Now that the event types have been categorized, the data are summarized again by the event category and the percent mortality is computed. The 10 events with the highest mortality are sub-setted. 
 
 ```r
 eventtype<-eventtype %>% group_by(EVCAT) %>% summarize(mortality=sum(mortality,na.rm=TRUE)) %>% arrange(desc(mortality))
@@ -106,6 +107,7 @@ eventtype.subset<-eventtype[1:10,]
 ```
 
 ## Plot mortalitity rates
+The 10 events with the highest mortality are plotted. 
 
 ```r
 g<-ggplot(eventtype.subset, aes(EVCAT,mortality))
