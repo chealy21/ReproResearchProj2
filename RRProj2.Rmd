@@ -5,9 +5,19 @@ output:
     keep_md: yes
 
 ---
-# Preparation and Pre-processing of Data
+# Synopsis
+In this analysis, I aim to describe the most dangerous weather events to population health, as described by fatalities and injuries, and the economoby. My hypothesis is that tornadoes are the most dangerous to population health and the economy as they are difficult to predict and can cause significant damage. To investigate this hypothesis, data published by the National Oceanic and Atmospheric Administration documenting significant weather events including:
+1) Storms with enough intensity to affect population health or cause property damage,
+2) Weather anomalies such as snow flurries in Miami
+3) Record maximum and minimum temperatures or precipitation occuring in connection with other weather events. 
+
+From these data, I found tornadoes to be significantly more detrimental to population health as opposed to other weather events. 
+
+# Loading and Pre-processing of Data
 Data on weather events was downloaded from https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2. Weather events were classified based on the documentation provided here: https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf
+
 ### Loading necessary libraries
+dplyr, fuzzyjoin, and ggplot 2 libraries are loaded. Additionally, the knitr options are established.
 ```{r global_options, include=TRUE}
 knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='figures/',
                       echo=TRUE, warning=FALSE, message=FALSE)
@@ -17,6 +27,7 @@ suppressPackageStartupMessages(library(ggplot2))
 ```
 
 ### Download and load file
+The file is downloaded if not already present in the working directory and loaded into the variable stormdata. The first 5 observations are printed.
 ```{r}
 destfile<-"stormdata.csv.bz2"
 fileURL<-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
@@ -25,15 +36,21 @@ if(!file.exists(destfile)){
 }
 
 stormdata<-read.csv("stormdata.csv.bz2")
+head(stormdata,5)
+```
 
+### Create event categories
+Event categories created based on categories provided in National Weather Service Instruction 10-605 (August 17, 2007). 
+
+```{r}
 eventcat<-c("Astronomical Low Tide","Avalanche","Blizzard","Coastal Flood","Cold/Wind Chill","Debris Flow","Dense Fog","Dense Smoke","Drought","Dust Devil","Dust Storm","Excessive Heat","Extreme Cold/Wind Chill","Flash Flood","Flood","Frost/Freeze","Funnel Cloud","Freezing Fog","Hail","Heat","Heavy Rain","Heavy Snow","High Surf","High Wind","Hurricane (Typhoon)","Ice Storm","Lake-Effect Snow","Lakeshore Flood","Lightning","Marine Hail","Marine High Wind","Marine Strong Wind","Marine Thunderstorm Wind","Rip Current","Seiche","Sleet","Storm Surge/Tide","Strong Wind","Thunderstorm Wind","Tornado","Tropical Depression","Tropical Storm","Tsunami","Volcanic Ash","Waterspout","Wildfire","Winter Storm","Winter Weather")
 eventcat<-as_tibble(eventcat)
 names(eventcat)<-"EVTYPE"
 ```
 
 
-### Subset
-Subset EVTYPE, FATALITIES, and INJURIES to help determine overall mortality of weather events. Summarize by EVCAT and EVTYPE, sum fatalities and injuries into mortality.
+### Subset necessary columns
+Subset EVTYPE, FATALITIES, and INJURIES to help determine overall mortality of weather events. The event categories are fuzzyjoined to this subset. A marker column is added to keep track if a category has been assigned to the event type. Then the subset is summarized by event category and event type with the health indicator added as the sum of the fatalities and injuries. This table is arranged in descending order by the health column.
 ```{r}
 eventtype<-stormdata %>% select(EVTYPE,FATALITIES,INJURIES) %>% transform(EVTYPE=tolower(EVTYPE)) %>% arrange(EVTYPE)
 eventtype.table<-as_tibble(eventtype)
@@ -66,7 +83,7 @@ Collapse the event types into appropriate groups. To do this, Add an event categ
 + Cold, Dry, High Seas, Wind were added as categories
 
 
-```{r echo=FALSE}
+```{r}
 #adjust avalanche and landslide
 avalanche<-unique(eventtype$EVTYPE[grepl("avalan",eventtype$EVTYPE, ignore.case=TRUE)|grepl("*slide*",eventtype$EVTYPE, ignore.case=TRUE)])
 eventtype$EVCAT[which(eventtype$EVTYPE %in% avalanche & eventtype$n==0)]<-"Avalanche"
@@ -274,7 +291,6 @@ eventtype$EVCAT[which(eventtype$EVTYPE %in% seiche & eventtype$n==0)]<-"Seiche"
 eventtype$n[which(eventtype$EVTYPE %in% seiche & eventtype$n==0)]<-1
 rm(seiche)
 
-
 #sleet
 sleet<-unique(eventtype$EVTYPE[grepl("sleet",eventtype$EVTYPE)])
 sleet<-sleet[!grepl("ice storm",sleet)]
@@ -323,7 +339,6 @@ volcano<-unique(eventtype$EVTYPE[grepl("volcan",eventtype$EVTYPE)])
 eventtype$EVCAT[which(eventtype$EVTYPE %in% volcano & eventtype$n==0)]<-"Volcanic Ash"
 eventtype$n[which(eventtype$EVTYPE %in% volcano & eventtype$n==0)]<-1
 rm(volcano)
-
 
 #waterspout
 waterspout<-unique(eventtype$EVTYPE[grepl("waterspout",eventtype$EVTYPE)])
@@ -409,6 +424,7 @@ Fatalities and Injuries were combined into an overall total of health. In this r
 # Results
 In terms of population health, tornados are the detrimental to population health, causing 
 5,658 fatalities and 91,364 injuries.  Thunderstorm winds only caused 706 fatalities, and 9,412 injuries. 
+
 ### Plot mortalitity rates
 The 10 events with the highest mortality are plotted. 
 ```{r}
