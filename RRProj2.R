@@ -1,46 +1,8 @@
----
-title: "Identifying Harmful and Costly Weather Events"
-output: 
-  html_document:
-    keep_md: yes
-
----
-# Synopsis
-In this analysis, I aim to describe the most dangerous weather events to population health, as described by fatalities and injuries, and the economy, as described by property and crop damage. My hypothesis is that tornadoes are the most dangerous to population health as they are difficult to predict and can cause significant damage. However, flooding is the most dangerous to the economy, as it causes significant and long-term damage to property and crops. To investigate this hypothesis, data published by the National Oceanic and Atmospheric Administration documenting significant weather events including:
-1) Storms with enough intensity to affect population health or cause property damage,
-2) Weather anomalies such as snow flurries in Miami
-3) Record maximum and minimum temperatures or precipitation occuring in connection with other weather events. 
-
-From these data, I found tornadoes to be significantly more detrimental to population health as opposed to other weather events. 
-
-# Data Processing
-## Download and load data
-Data on weather events was downloaded from https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2. Weather events were classified based on the documentation provided here: https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf
-
-### Loading necessary libraries
-dplyr, fuzzyjoin, and ggplot 2 libraries are loaded. Additionally, the knitr options are established.
-
-```r
-knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='figures/',
-                      echo=TRUE, warning=FALSE, message=FALSE)
-
 # Load necessary libraries
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(fuzzyjoin))
-```
-
-```
-## Warning: package 'fuzzyjoin' was built under R version 3.4.4
-```
-
-```r
 suppressPackageStartupMessages(library(ggplot2))
-```
 
-### Download and load file
-The file is downloaded if not already present in the working directory and loaded into the variable stormdata. The first 5 observations are printed.
-
-```r
 # Load file
 destfile<-"stormdata.csv.bz2"
 fileURL<-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
@@ -49,24 +11,13 @@ if(!file.exists(destfile)){
 }
 
 stormdata<-read.csv("stormdata.csv.bz2")
-```
+head(stormdata,5)
 
-### Create event categories
-Event categories created based on categories provided in National Weather Service Instruction 10-605 (August 17, 2007). 
-
-
-```r
 # Event categories
 eventcat<-c("Astronomical Low Tide","Avalanche","Blizzard","Coastal Flood","Cold/Wind Chill","Debris Flow","Dense Fog","Dense Smoke","Drought","Dust Devil","Dust Storm","Excessive Heat","Extreme Cold/Wind Chill","Flash Flood","Flood","Frost/Freeze","Funnel Cloud","Freezing Fog","Hail","Heat","Heavy Rain","Heavy Snow","High Surf","High Wind","Hurricane (Typhoon)","Ice Storm","Lake-Effect Snow","Lakeshore Flood","Lightning","Marine Hail","Marine High Wind","Marine Strong Wind","Marine Thunderstorm Wind","Rip Current","Seiche","Sleet","Storm Surge/Tide","Strong Wind","Thunderstorm Wind","Tornado","Tropical Depression","Tropical Storm","Tsunami","Volcanic Ash","Waterspout","Wildfire","Winter Storm","Winter Weather")
 eventcat<-as_tibble(eventcat)
 names(eventcat)<-"EVTYPE"
-```
 
-
-### Subset necessary columns
-Subset EVTYPE, FATALITIES, and INJURIES to help determine overall mortality of weather events. The event categories are fuzzyjoined to this subset. A marker column is added to keep track if a category has been assigned to the event type. Then the subset is summarized by event category and event type with the health indicator added as the sum of the fatalities and injuries. This table is arranged in descending order by the health column.
-
-```r
 # Subset
 eventtype<-stormdata %>% select(EVTYPE,FATALITIES,INJURIES,PROPDMG,PROPDMGEXP,CROPDMG,CROPDMGEXP) %>% transform(EVTYPE=tolower(EVTYPE)) %>% arrange(EVTYPE)
 eventtype.table<-as_tibble(eventtype)
@@ -89,24 +40,7 @@ eventtype<-eventtype %>% group_by(EVCAT,EVTYPE) %>% summarize(FATALITIES=sum(FAT
 
 #Remove unnecessary data frames
 rm(eventtype.table,eventcat)
-```
 
-### Clean the event types to correspond to the 48 listed types
-Collapse the event types into appropriate groups. To do this, Add an event category column to avoid changing the raw data. Use regular expression functions to identify the categories, and set the category column for those events to one of the 48 categories listed in the accompanying documentation. Any event that could not be easily classified was defined as 'other'. To classify each category, the category pattern was selected and viewed. If one occurrence had multiple events, it was classifed by the most likely cause of injury or destruction. For example, excessive heat causes more injuries and fatalities than drought, and therefore excessive heat/drought was classified as excessive heat. Tornadoes are more destructive than thunderstorm wind and hail, so 'tornadoes, tstm wind, hail' was classified as tornado. Categories were classified by subsetting the unique eventtypes with the category. The EVCAT was set equal to the appropriate category and n was changed to 1.The subset was then removed. 
-
-* **Notes:**
-+ Landslide, mudslide, and rock slide listed in Debris Flow
-+ Blow-out tide added to astronomical low tide
-+ Excessive heat/drought classified as excessive heat
-+ Cold/Wind Chill combined with Extreme Cold/Wind Chill
-+ Heavy snow/ice storm classified as heavy snow
-+ The wind categories should be run last to avoid conflicts
-+ All winter events not included in previous categories were grouped into Winter Weather
-+ Cold, Dry, High Seas, Wind were added as categories
-
-
-
-```r
 #Categorize events
 #adjust avalanche
 avalanche<-unique(eventtype$EVTYPE[grepl("avalan",eventtype$EVTYPE, ignore.case=TRUE)])
@@ -434,96 +368,22 @@ rm(dry)
 #uncategorized
 eventtype$EVCAT[is.na(eventtype$EVCAT)]<-"Other"
 eventtype$n[which(eventtype$n==0)]<-1
-```
 
-
-# Methods
-Fatalities and Injuries were combined into an overall total of health. In this regard, the higher the number, the worse the event was towards population health. The top 10 events most detrimental to public health were isolated and compared.
-
-### Re-Summarize to determine highest fatalities and injuries
-Now that the event types have been categorized, the data are summarized again by the event category. A health category summing the fatalities and injuries is created. The 10 events with the highest mortality are sub-setted. 
-
-```r
 #Health
-event.health<-eventtype %>% group_by(EVCAT) %>% summarize(Fatalities=sum(FATALITIES, na.rm=TRUE),Injuries=sum(INJURIES, na.rm=TRUE),health=sum(health,na.rm=TRUE)) %>% arrange(desc(health))
+event.health<-eventtype %>% group_by(EVCAT) %>% summarize(Fatalities=sum(FATALITIES),Injuries=sum(INJURIES),health=sum(health,na.rm=TRUE)) %>% arrange(desc(health))
 
 head(event.health,10)
-```
 
-```
-## # A tibble: 10 x 4
-##    EVCAT             Fatalities Injuries health
-##    <chr>                  <dbl>    <dbl>  <dbl>
-##  1 Tornado               5658      91364  97022
-##  2 Thunderstorm Wind      706       9412  10118
-##  3 Excessive Heat        2197       7109   9306
-##  4 Flood                  512       6881   7393
-##  5 Lightning              818       5232   6050
-##  6 Heat                   937       2100   3037
-##  7 Flash Flood           1035       1802   2837
-##  8 Ice Storm               89.0     1975   2064
-##  9 High Wind              290       1464   1754
-## 10 Wildfire                90.0     1608   1698
-```
-
-```r
 event.health<-event.health[1:10,]
-```
 
-
-
-```r
-event.damage<-eventtype %>% group_by(EVCAT) %>% summarize(Property=sum(PROPDMG,na.rm=TRUE),Crops=sum(CROPDMG,na.rm=TRUE),total=sum(PROPDMG,CROPDMG,na.rm=TRUE)) %>% arrange(desc(total))
-
-event.damage<-event.damage[1:10,]
-
-head(event.damage,10)
-```
-
-```
-## # A tibble: 10 x 4
-##    EVCAT                 Property       Crops        total
-##    <chr>                    <dbl>       <dbl>        <dbl>
-##  1 Flood             150250282300 11152624050 161402906350
-##  2 Hurricane          84736105010  5505292800  90241397810
-##  3 Tornado            58530431730   417461360  58947893090
-##  4 Storm Surge/Tide   47964724000      855000  47965579000
-##  5 Hail               16014936720  3111295850  19126232570
-##  6 Flash Flood        16907876610  1532187150  18440063760
-##  7 Drought             1046306000 13972616000  15018922000
-##  8 Thunderstorm Wind  10922208130  1206799650  12129007780
-##  9 Ice Storm           3944927810  5022113500   8967041310
-## 10 Wildfire            8496628500   403281630   8899910130
-```
-
-# Results
-The results of this analysis:
-
-## Weather events detrimental to population health
-In terms of population health, tornados are the detrimental to population health, causing 
-5,658 fatalities and 91,364 injuries.  Thunderstorm winds only caused 706 fatalities, and 9,412 injuries. 
-
-
-### Plot mortalitity rates
-The 10 events with the highest mortality are plotted. 
-
-```r
 #Plot
 g<-ggplot(event.health, aes(EVCAT,health))
-p<-g+geom_col(aes(fill=EVCAT))+labs(title="Mortality Rate of Weather Events in the United States", x="Weather Event", y="Total Fatalities and Injuries")
+p<-g+geom_col(aes(fill=EVCAT))+labs(title="Mortality Rate of Weather Events in the United States")
 print(p)
-```
 
-![](figures/health_plot-1.png)<!-- -->
+#Economic
+event.damage<-eventtype %>% group_by(EVCAT) %>% summarize(Property=sum(PROPDMG,na.rm=TRUE),Crops=sum(CROPDMG,na.rm=TRUE),total=sum(PROPDMG,CROPDMG,na.rm=TRUE)) %>% arrange(desc(total))
+event.damage<-event.damage[1:10,]
 
-## Weather events detrimental to the economy
-In terms of effects on the economy, flooding effects the economy the most, causing \$150,250,282,300 in property damage and \$11,152,624,050 in crop damage for a total of \$161,402,906,350. Hurricanes were next with a total of \$90,241,397,810 in damage.
-
-```r
 g<-ggplot(event.damage,aes(EVCAT,total))
-p<-g+geom_col(aes(fill=EVCAT))+labs(title="Economic Effects of Weather Events in the United States", x="Weather Event",y="Total Damage in Dollars")
-print(p)
-```
-
-![](figures/damage_plot-1.png)<!-- -->
-
+p<-g+geom_col(aes(fill=EVCAT))+labs(title="Economic Effects of Weather Events in the United States")
